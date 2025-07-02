@@ -1,4 +1,4 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonText } from "@ionic/react";
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonText, IonLabel } from "@ionic/react";
 import React from "react";
 import { useMealStore } from "../../stores/mealStore";
 import { MealItem } from "../../types/MealItem";
@@ -6,9 +6,9 @@ import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 
 export const calculateAcuteScore = (items: MealItem[]): number => {
-	const totalKcal = items.reduce((sum, item) => sum + item.kcal, 0);
+	const totalKcal = items.reduce((sum, item) => sum + item.kcalPerUnit * item.quantity, 0);
 	if (totalKcal === 0) return 0;
-	const score = items.reduce((sum, item) => sum + item.fii * item.kcal, 0) / totalKcal;
+	const score = items.reduce((sum, item) => sum + item.fii * (item.kcalPerUnit * item.quantity), 0) / totalKcal;
 	return Math.round(score);
 };
 
@@ -17,7 +17,7 @@ const Dashboard: React.FC = () => {
 	const latestMeal = meals[0];
 	const recentAcute = latestMeal ? calculateAcuteScore(latestMeal.items) : 0;
 	const recentColor = recentAcute < 35 ? "#2ecc71" : recentAcute < 60 ? "#f1c40f" : "#e74c3c";
-	const totalKcal = latestMeal ? latestMeal.items.reduce((sum, item) => sum + item.kcal, 0) : 0;
+	const totalKcal = latestMeal ? latestMeal.items.reduce((sum, item) => sum + item.kcalPerUnit * item.quantity, 0) : 0;
 
 	return (
 		<IonPage>
@@ -30,7 +30,27 @@ const Dashboard: React.FC = () => {
 			<IonContent className='ion-padding'>
 				{meals.length === 0 ? (
 					<IonText color='medium'>
-						<p>No meals logged yet. Go to the camera tab to scan one!</p>
+						<IonCard
+							style={{
+								borderRadius: "16px",
+								boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+								padding: "1.5rem 1rem",
+								textAlign: "center",
+								margin: "2rem auto",
+								maxWidth: 350,
+							}}>
+							<IonCardHeader>
+								<IonCardTitle style={{ fontSize: "1.2rem", fontWeight: 700 }}>No Meals Logged</IonCardTitle>
+							</IonCardHeader>
+							<IonCardContent>
+								<IonText color='medium'>
+									<p style={{ fontSize: "1rem", marginBottom: "1rem" }}>You haven't added any meals yet.</p>
+									<p style={{ fontSize: "0.95rem" }}>
+										Tap the <strong>Camera</strong> tab below to scan and log your first meal!
+									</p>
+								</IonText>
+							</IonCardContent>
+						</IonCard>
 					</IonText>
 				) : (
 					<>
@@ -100,9 +120,15 @@ const Dashboard: React.FC = () => {
 												marginBottom: "6px",
 											}}>
 											<IonText color='medium'>{item.name}</IonText>
-											<span style={{ color: "#666" }}>
-												FII: {item.fii} | kcal: {item.kcal}
-											</span>
+											<div className='' style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+												<IonLabel color='dark'>
+													FII: {item.fii} | kcal: {item.kcalPerUnit * item.quantity}
+												</IonLabel>
+												<IonLabel color='medium'>
+													{item.kcalPerUnit}kcal * {item.quantity}
+													{item.unit}
+												</IonLabel>
+											</div>
 										</div>
 									))}
 								</div>
@@ -174,6 +200,9 @@ const Dashboard: React.FC = () => {
 											<IonText color='medium'>
 												<p style={{ fontSize: "0.9rem", marginTop: "0.5rem" }}>Acute Score</p>
 											</IonText>
+											<IonText color='medium'>
+												<p style={{ fontSize: "0.8rem" }}>{meal.items.reduce((sum, item) => sum + item.kcalPerUnit * item.quantity, 0)} kcal</p>
+											</IonText>
 										</div>
 
 										<div style={{ fontSize: "0.85rem", color: "#666" }}>
@@ -186,9 +215,15 @@ const Dashboard: React.FC = () => {
 														marginBottom: "4px",
 													}}>
 													<IonText color='medium'>{item.name}</IonText>
-													<span>
-														FII: {item.fii} | kcal: {item.kcal}
-													</span>
+													<div className='' style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+														<IonLabel color='medium'>
+															FII: {item.fii} | kcal: {item.kcalPerUnit * item.quantity}
+														</IonLabel>
+														<IonLabel color='medium'>
+															{item.kcalPerUnit}kcal * {item.quantity}
+															{item.unit}
+														</IonLabel>
+													</div>
 												</div>
 											))}
 										</div>

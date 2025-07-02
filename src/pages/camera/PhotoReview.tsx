@@ -1,16 +1,16 @@
-import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonImg, IonSkeletonText, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonItem, IonLabel, IonText, IonInput, IonButtons, IonBackButton, IonButton, useIonRouter, IonToast, IonIcon } from "@ionic/react";
+import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonImg, IonSkeletonText, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonText, IonInput, IonButtons, IonBackButton, IonButton, useIonRouter, IonToast, IonIcon, IonSelect, IonSelectOption } from "@ionic/react";
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
 import { Meal } from "../../types/Meal";
-import { MealItem } from "../../types/MealItem";
+import { MealItem, Unit } from "../../types/MealItem";
 import { useMealStore } from "../../stores/mealStore"; // adjust path as needed
 import { pencilOutline } from "ionicons/icons";
+import { useExtractMealDataStore } from "../../stores/extractMealDataStore";
 
-const fetchMealFromAPI = async (imageUri: string): Promise<Meal> => {
+const fetchMealFromAPI = async (base64Images: string[], textualData: string): Promise<Meal> => {
 	const res = await fetch("http://localhost:8000/extract-meal", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ image_url: imageUri }),
+		body: JSON.stringify({ images: base64Images, textualData }),
 	});
 	if (!res.ok) throw new Error("Failed to extract meal.");
 	const data = await res.json();
@@ -18,10 +18,6 @@ const fetchMealFromAPI = async (imageUri: string): Promise<Meal> => {
 };
 
 const PhotoReview = () => {
-	const location = useLocation();
-	const params = new URLSearchParams(location.search);
-	const imageDataUri = params.get("image");
-
 	const [meal, setMeal] = useState<Meal | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [showToast, setShowToast] = useState(false);
@@ -29,19 +25,21 @@ const PhotoReview = () => {
 	const addMeal = useMealStore((s) => s.addMeal);
 	const router = useIonRouter();
 
+	const { images, textualData } = useExtractMealDataStore();
+
 	useEffect(() => {
-		if (!imageDataUri) return;
+		if (!images || images.length === 0) return;
 		const fetchMeal = async () => {
-			const result = await fetchMealFromAPI(imageDataUri);
+			const result = await fetchMealFromAPI(images, textualData);
 			setMeal(result);
 			setLoading(false);
 		};
 		fetchMeal();
-	}, [imageDataUri]);
+	}, []);
 
 	const updateItem = (id: string, field: keyof MealItem, value: string) => {
 		if (!meal) return;
-		const updatedItems = meal.items.map((item) => (item.id === id ? { ...item, [field]: field === "name" ? value : Number(value) } : item));
+		const updatedItems = meal.items.map((item) => (item.id === id ? { ...item, [field]: field === "name" || "unit" ? value : Number(value) } : item));
 		setMeal({ ...meal, items: updatedItems });
 	};
 
@@ -66,9 +64,9 @@ const PhotoReview = () => {
 			</IonHeader>
 
 			<IonContent className=''>
-				{imageDataUri && (
+				{images && (
 					<IonImg
-						src={imageDataUri}
+						src={images[0]}
 						alt='Captured food'
 						style={{
 							width: "100%",
@@ -147,8 +145,17 @@ const PhotoReview = () => {
 									<IonCardTitle>{item.name}</IonCardTitle>
 								</IonCardHeader>
 								<IonCardContent>
-									<IonInput type='number' fill='outline' labelPlacement='floating' label='FII' value={item.fii} placeholder='Enter FII' onIonInput={(e) => updateItem(item.id, "fii", e.detail.value!)} />
-									<IonInput className='ion-margin-top' labelPlacement='floating' type='number' fill='outline' label='kcals' value={item.kcal} placeholder='Enter kcal' onIonInput={(e) => updateItem(item.id, "kcal", e.detail.value!)} />
+									<IonInput type='number' fill='outline' labelPlacement='start' label='FII' value={item.fii} placeholder='Enter FII' onIonInput={(e) => updateItem(item.id, "fii", e.detail.value!)} />
+									<IonSelect className='ion-margin-top' label='Unit' fill='outline' value={item.unit} onIonChange={(e) => updateItem(item.id, "unit", e.detail.value)}>
+										{Object.values(Unit).map((u) => (
+											<IonSelectOption key={u} value={u}>
+												{u}
+											</IonSelectOption>
+										))}
+									</IonSelect>
+									<IonInput className='ion-margin-top' labelPlacement='start' type='number' fill='outline' label={`kcals per (${item.unit})`} value={item.kcalPerUnit} placeholder='Enter kcal for one unit' onIonInput={(e) => updateItem(item.id, "kcalPerUnit", e.detail.value!)} />
+									<IonInput className='ion-margin-vertical' labelPlacement='start' type='number' fill='outline' label='Quantity' value={item.quantity} placeholder={`Enter quantity (${item.unit})`} onIonInput={(e) => updateItem(item.id, "quantity", e.detail.value!)} />
+									<IonText>Total Calories: {item.kcalPerUnit && item.quantity ? (Number(item.kcalPerUnit) * Number(item.quantity)).toFixed(0) : 0} kcal</IonText>
 								</IonCardContent>
 							</IonCard>
 						))}
