@@ -5,4 +5,5 @@ export type Meal = {
 	name: string;
 	timestamp: number;
 	items: MealItem[];
+	aiComment: string;
 };
