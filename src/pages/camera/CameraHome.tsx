@@ -3,12 +3,12 @@ import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { useState } from "react";
 import { useIonRouter } from "@ionic/react";
 import { arrowForward, camera, trash } from "ionicons/icons";
-import { useExtractMealDataStore } from "../../stores/extractMealDataStore";
+import { useAiExtractMealDataStore } from "../../stores/extractAiMealDataStore";
 
 const CameraHome = () => {
 	const [error, setError] = useState("");
 	const router = useIonRouter();
-	const { addImage, removeImage, setTextualData, images, textualData } = useExtractMealDataStore();
+	const { addImage, removeImage, setTextualData, images, textualData } = useAiExtractMealDataStore();
 	// const { View: ScanFoodAnimation } = useLottie({ animationData: scanFood, loop: true, autoplay: true });
 
 	const handleStartScan = async () => {

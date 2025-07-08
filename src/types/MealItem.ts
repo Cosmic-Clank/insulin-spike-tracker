@@ -16,4 +16,8 @@ export type MealItem = {
 	quantity: number;
 	unit: Unit;
 	kcalPerUnit: number;
+
+	carb_g: number;
+	gi: number;
+	satFat_g: number;
 };

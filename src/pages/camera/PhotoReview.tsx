@@ -2,38 +2,32 @@ import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonImg, IonSkelet
 import { useEffect, useState } from "react";
 import { Meal } from "../../types/Meal";
 import { MealItem, Unit } from "../../types/MealItem";
-import { useMealStore } from "../../stores/mealStore"; // adjust path as needed
+import { usePersistentMealStore } from "../../stores/persistentMealStore"; // adjust path as needed
 import { pencilOutline } from "ionicons/icons";
-import { useExtractMealDataStore } from "../../stores/extractMealDataStore";
-import config from "../../../config.json"; // adjust path as needed
-
-const fetchMealFromAPI = async (base64Images: string[], textualData: string): Promise<Meal> => {
-	const res = await fetch(`${config.backend_api_url}/extract-meal`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ images: base64Images, textualData }),
-	});
-	if (!res.ok) throw new Error("Failed to extract meal.");
-	const data = await res.json();
-	return data.meal;
-};
+import { useAiExtractMealDataStore } from "../../stores/extractAiMealDataStore";
+import { fetchMealFromAPI } from "../../api/api";
 
 const PhotoReview = () => {
 	const [meal, setMeal] = useState<Meal | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [showToast, setShowToast] = useState(false);
 
-	const addMeal = useMealStore((s) => s.addMeal);
+	const { addMeal } = usePersistentMealStore();
 	const router = useIonRouter();
 
-	const { images, textualData } = useExtractMealDataStore();
+	const { images, textualData } = useAiExtractMealDataStore();
 
 	useEffect(() => {
 		if (!images || images.length === 0) return;
 		const fetchMeal = async () => {
-			const result = await fetchMealFromAPI(images, textualData);
-			setMeal(result);
-			setLoading(false);
+			try {
+				const result = await fetchMealFromAPI(images, textualData);
+				setMeal(result);
+				setLoading(false);
+			} catch (error) {
+				console.error("Error fetching meal data:", error);
+				setLoading(false);
+			}
 		};
 		fetchMeal();
 	}, []);
@@ -137,13 +131,6 @@ const PhotoReview = () => {
 										Logged at: {new Date(meal.timestamp).toLocaleTimeString()}
 									</p>
 								</IonText>
-							</IonCardHeader>
-						</IonCard>
-						<IonCard className='ion-margin-bottom'>
-							<IonCardHeader>
-								<IonCardTitle>Total Calories: {meal.items.reduce((sum, item) => sum + (Number(item.kcalPerUnit) * Number(item.quantity) || 0), 0).toFixed(0)} kcal</IonCardTitle>
-								<IonText className='ion-margin-vertical'>AI Comment:</IonText>
-								<IonText color='medium'>{meal.aiComment || "No AI comment available."}</IonText>
 							</IonCardHeader>
 						</IonCard>
 

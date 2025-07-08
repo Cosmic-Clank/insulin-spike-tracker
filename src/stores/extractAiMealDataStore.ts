@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type ExtractMealDataStore = {
+type AiExtractMealDataStore = {
 	images: string[];
 	textualData: string;
 	addImage: (image: string) => void;
@@ -8,7 +8,7 @@ type ExtractMealDataStore = {
 	setTextualData: (text: string) => void;
 };
 
-export const useExtractMealDataStore = create<ExtractMealDataStore>((set) => ({
+export const useAiExtractMealDataStore = create<AiExtractMealDataStore>((set) => ({
 	images: [],
 	addImage: (image) => set((state) => ({ images: state.images.length < 5 ? [...state.images, image] : state.images })),
 	removeImage: (index) => set((state) => ({ images: state.images.filter((_, i) => i !== index) })),

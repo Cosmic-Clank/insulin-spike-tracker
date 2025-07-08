@@ -1,7 +1,7 @@
 import { Redirect, Route } from "react-router-dom";
 import { IonApp, IonIcon, IonLabel, IonRouterOutlet, IonTabBar, IonTabButton, IonTabs, setupIonicReact } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { camera, cog, home, square, triangle } from "ionicons/icons";
+import { addCircle, cog, home } from "ionicons/icons";
 import Dashboard from "./pages/dashboard/Dashboard";
 
 /* Core CSS required for Ionic components to work properly */
@@ -36,6 +36,11 @@ import "./theme/variables.css";
 import PhotoReview from "./pages/camera/PhotoReview";
 import CameraHome from "./pages/camera/CameraHome";
 import Settings from "./pages/settings/Settings";
+import AddMeal from "./pages/meal/Meals";
+import NewMeal from "./pages/meal/NewMeal";
+import ExistingMeal from "./pages/meal/ExistingMeal";
+import AiMealAdd from "./pages/meal/AiMealAdd";
+import PreviewMeal from "./pages/meal/PreviewMeal";
 
 setupIonicReact();
 
@@ -47,31 +52,43 @@ const App: React.FC = () => (
 					<Route exact path='/dashboard'>
 						<Dashboard />
 					</Route>
-					<Route exact path='/camera'>
-						<CameraHome />
+					<Route exact path='/meals'>
+						<AddMeal />
 					</Route>
-					<Route exact path='/camera/review'>
-						<PhotoReview />
+
+					<Route exact path='/meals/current'>
+						<PreviewMeal />
 					</Route>
-					<Route path='/settings'>
+					<Route exact path='/meals/existing/:mealId'>
+						<ExistingMeal />
+					</Route>
+					<Route exact path='/meals/new'>
+						<NewMeal />
+					</Route>
+					<Route exact path='/meals/new/ai'>
+						<AiMealAdd />
+					</Route>
+
+					<Route exact path='/settings'>
 						<Settings />
 					</Route>
+
 					<Route exact path='/'>
 						<Redirect to='/dashboard' />
 					</Route>
 				</IonRouterOutlet>
 				<IonTabBar slot='bottom'>
 					<IonTabButton tab='dashboard' href='/dashboard'>
-						<IonIcon aria-hidden='true' icon={home} />
-						<IonLabel>Dashboard</IonLabel>
+						<IonIcon size='large' aria-hidden='true' icon={home} />
+						<IonLabel style={{ fontSize: "10px", marginTop: "4px" }}>Dashboard</IonLabel>
 					</IonTabButton>
-					<IonTabButton tab='camera' href='/camera'>
-						<IonIcon aria-hidden='true' icon={camera} />
-						<IonLabel>Camera</IonLabel>
+					<IonTabButton tab='addMeal' href='/meals'>
+						<IonIcon size='large' aria-hidden='true' icon={addCircle} />
+						<IonLabel style={{ fontSize: "10px", marginTop: "4px" }}>Add Meal</IonLabel>
 					</IonTabButton>
 					<IonTabButton tab='settings' href='/settings'>
-						<IonIcon aria-hidden='true' icon={cog} />
-						<IonLabel>Settings</IonLabel>
+						<IonIcon size='large' aria-hidden='true' icon={cog} />
+						<IonLabel style={{ fontSize: "10px", marginTop: "4px" }}>Settings</IonLabel>
 					</IonTabButton>
 				</IonTabBar>
 			</IonTabs>

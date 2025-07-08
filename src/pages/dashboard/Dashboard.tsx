@@ -1,23 +1,13 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonText, IonLabel } from "@ionic/react";
 import React from "react";
-import { useMealStore } from "../../stores/mealStore";
-import { MealItem } from "../../types/MealItem";
+import { calculateAcuteScore, usePersistentMealStore } from "../../stores/persistentMealStore";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-
-export const calculateAcuteScore = (items: MealItem[]): number => {
-	const totalKcal = items.reduce((sum, item) => sum + item.kcalPerUnit * item.quantity, 0);
-	if (totalKcal === 0) return 0;
-	const score = items.reduce((sum, item) => sum + item.fii * (item.kcalPerUnit * item.quantity), 0) / totalKcal;
-	return Math.round(score);
-};
+import { calculateChronicScore } from "../../utils";
 
 const Dashboard: React.FC = () => {
-	const meals = useMealStore((s) => s.meals);
-	const latestMeal = meals[0];
-	const recentAcute = latestMeal ? calculateAcuteScore(latestMeal.items) : 0;
-	const recentColor = recentAcute < 35 ? "#2ecc71" : recentAcute < 60 ? "#f1c40f" : "#e74c3c";
-	const totalKcal = latestMeal ? latestMeal.items.reduce((sum, item) => sum + item.kcalPerUnit * item.quantity, 0) : 0;
+	const meals = usePersistentMealStore((s) => s.meals);
+	const chronicScore = calculateChronicScore(meals);
 
 	return (
 		<IonPage>
@@ -46,7 +36,7 @@ const Dashboard: React.FC = () => {
 								<IonText color='medium'>
 									<p style={{ fontSize: "1rem", marginBottom: "1rem" }}>You haven't added any meals yet.</p>
 									<p style={{ fontSize: "0.95rem" }}>
-										Tap the <strong>Camera</strong> tab below to scan and log your first meal!
+										Tap the <strong>Add Meal</strong> tab below to scan and log your first meal!
 									</p>
 								</IonText>
 							</IonCardContent>
@@ -63,19 +53,19 @@ const Dashboard: React.FC = () => {
 								boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
 							}}>
 							<IonCardHeader className='ion-margin' style={{ paddingBottom: 0 }}>
-								<IonCardTitle style={{ fontSize: "1.4rem", fontWeight: 700 }}>{latestMeal.name}</IonCardTitle>
+								<IonCardTitle style={{ fontSize: "1.4rem", fontWeight: 700, textAlign: "center" }}>Chronic Score</IonCardTitle>
 							</IonCardHeader>
 
 							<IonCardContent style={{ paddingTop: "0.5rem" }}>
 								<div style={{ width: 140, height: 140, margin: "0 auto" }}>
 									<CircularProgressbar
-										value={recentAcute}
+										value={chronicScore}
 										maxValue={100}
-										text={`${recentAcute}`}
+										text={`${chronicScore}`}
 										styles={buildStyles({
 											textSize: "2.2rem",
-											pathColor: recentColor,
-											textColor: recentColor,
+											pathColor: "#3498db",
+											textColor: "#3498db",
 											trailColor: "#dfe6f0",
 										})}
 									/>
@@ -87,68 +77,7 @@ const Dashboard: React.FC = () => {
 											marginTop: "0.75rem",
 											textAlign: "center",
 										}}>
-										Most Recent Acute Score
-									</p>
-								</IonText>
-
-								<IonText color='dark'>
-									<p
-										style={{
-											fontSize: "0.95rem",
-											textAlign: "center",
-											marginTop: "0.25rem",
-										}}>
-										Total Calories: <strong>{totalKcal}</strong>
-									</p>
-								</IonText>
-
-								<div
-									style={{
-										fontSize: "0.85rem",
-										color: "#333",
-										padding: "0.75rem 1rem",
-										marginTop: "1rem",
-										borderRadius: "12px",
-										boxShadow: "0 1px 6px rgba(0,0,0,0.04)",
-									}}>
-									{latestMeal.items.map((item) => (
-										<div
-											key={item.id}
-											style={{
-												display: "flex",
-												justifyContent: "space-between",
-												marginBottom: "6px",
-											}}>
-											<IonText color='medium'>{item.name}</IonText>
-											<div className='' style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-												<IonLabel color='dark'>
-													FII: {item.fii} | kcal: {item.kcalPerUnit * item.quantity}
-												</IonLabel>
-												<IonLabel color='medium'>
-													{item.kcalPerUnit}kcal * {item.quantity}
-													{item.unit}
-												</IonLabel>
-											</div>
-										</div>
-									))}
-								</div>
-
-								<IonText color='medium'>
-									<p
-										style={{
-											fontSize: "0.75rem",
-											textAlign: "right",
-											marginTop: "1rem",
-											marginRight: "0.25rem",
-										}}>
-										{new Date(latestMeal.timestamp).toLocaleString(undefined, {
-											weekday: "short", // e.g. "Mon"
-											year: "numeric",
-											month: "short", // e.g. "Jun"
-											day: "numeric",
-											hour: "2-digit",
-											minute: "2-digit",
-										})}
+										Overall Chronic Score based on your meals
 									</p>
 								</IonText>
 							</IonCardContent>
@@ -159,7 +88,7 @@ const Dashboard: React.FC = () => {
 						</IonText>
 
 						{/* Other Meals */}
-						{meals.slice(1).map((meal) => {
+						{meals.map((meal) => {
 							const acute = calculateAcuteScore(meal.items);
 							const statusColor = acute < 35 ? "#2ecc71" : acute < 60 ? "#f1c40f" : "#e74c3c";
 
@@ -215,8 +144,8 @@ const Dashboard: React.FC = () => {
 														marginBottom: "4px",
 													}}>
 													<IonText color='medium'>{item.name}</IonText>
-													<div className='' style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-														<IonLabel color='medium'>
+													<div className='ion-margin-bottom' style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+														<IonLabel color='dark'>
 															FII: {item.fii} | kcal: {item.kcalPerUnit * item.quantity}
 														</IonLabel>
 														<IonLabel color='medium'>
