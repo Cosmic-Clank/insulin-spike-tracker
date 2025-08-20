@@ -9,23 +9,23 @@ const Settings: React.FC = () => {
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar>
+				<IonToolbar className='ion-padding-top ion-text-center'>
 					<IonTitle>Settings</IonTitle>
 				</IonToolbar>
 			</IonHeader>
 
 			<IonContent className='ion-padding'>
-				<IonText color='medium'>
+				{/* <IonText color='medium'>
 					<h2 style={{ marginBottom: "1rem", fontSize: "1.2rem" }}>Preferences</h2>
 				</IonText>
-
+				
 				<IonList>
 					<IonItem style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
 						<IonToggle checked={darkMode} onIonChange={(e) => toggleDarkMode(e.detail.checked)}>
 							Dark Mode
 						</IonToggle>
 					</IonItem>
-				</IonList>
+				</IonList> */}
 				<IonText color='medium'>
 					<h2 style={{ marginBottom: "1rem", fontSize: "1.2rem" }}>Data</h2>
 				</IonText>

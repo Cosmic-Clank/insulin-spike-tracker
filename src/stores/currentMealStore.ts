@@ -26,7 +26,7 @@ export const useCurrentMealStore = create<CurrentMealStore>((set, get) => ({
 	},
 
 	setMeal: (meal: Meal) => {
-		set({ meal });
+		set({ meal }); // Ensure meal has a unique ID
 	},
 
 	setNewMealId: () => {
@@ -65,13 +65,14 @@ export const useCurrentMealStore = create<CurrentMealStore>((set, get) => ({
 		const newItem: MealItem = {
 			id: crypto.randomUUID(),
 			name: "New Item",
-			fii: 0,
-			unit: "g" as Unit,
-			quantity: 0,
-			kcalPerUnit: 0,
-			carb_g: 0,
+			servingSize: 0,
+			servingUnit: "g" as Unit,
+			amount: 0,
+			kcalPerServing: 0,
+			carbPerServing_g: 0,
+			satFatPerServing_g: 0,
 			gi: 0,
-			satFat_g: 0,
+			fii: 0,
 		};
 
 		set((state) => ({

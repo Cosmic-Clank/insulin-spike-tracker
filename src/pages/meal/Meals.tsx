@@ -1,10 +1,10 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonFabButton, IonIcon, IonFab, IonItem, IonList, IonLabel, IonThumbnail, IonText, IonImg } from "@ionic/react";
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonFabButton, IonIcon, IonFab, IonItem, IonLabel, IonThumbnail, IonText, IonImg, useIonRouter } from "@ionic/react";
 import { add } from "ionicons/icons";
-import { calculateAcuteScore, usePersistentMealStore } from "../../stores/persistentMealStore";
-import { buildStyles, CircularProgressbar } from "react-circular-progressbar";
+import { usePersistentMealStore } from "../../stores/persistentMealStore";
 import AcuteScoreProgressbar from "../../components/AcuteScoreProgressbar";
 import { useCurrentMealStore } from "../../stores/currentMealStore";
 import { Meal } from "../../types/Meal";
+import { calculateTotalCalories, getMealTimeString } from "../../utils";
 
 const AddMeal: React.FC = () => {
 	const { meals } = usePersistentMealStore();
@@ -13,7 +13,7 @@ const AddMeal: React.FC = () => {
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar>
+				<IonToolbar className='ion-padding-top ion-text-center'>
 					<IonTitle>Meals</IonTitle>
 				</IonToolbar>
 			</IonHeader>
@@ -24,19 +24,19 @@ const AddMeal: React.FC = () => {
 						<IonIcon icon={add}></IonIcon>
 					</IonFabButton>
 				</IonFab>
-				{meal.name !== "New Meal" && (
+				{/* {meal.name !== "New Meal" && (
 					<>
 						<IonText color='medium'>
 							<h2 style={{ marginBottom: "1rem", fontSize: "1.2rem" }}>Current Meal</h2>
 						</IonText>
 						<MealCard key={meal.id} meal={meal} />
 					</>
-				)}
+				)} */}
 				<IonText color='medium'>
-					<h2 style={{ marginBottom: "1rem", fontSize: "1.2rem" }}>Recent Meals</h2>
+					<h2 style={{ marginBottom: "1rem", fontSize: "1.2rem" }}>Re-add Previous Meals</h2>
 				</IonText>
-				{meals.map((meal) => (
-					<MealCard key={meal.id} meal={meal} />
+				{meals.map((meal, index) => (
+					<MealCard key={index} meal={meal} />
 				))}
 			</IonContent>
 		</IonPage>
@@ -46,8 +46,21 @@ const AddMeal: React.FC = () => {
 export default AddMeal;
 
 function MealCard({ meal }: { meal: Meal }) {
+	const { getMealById } = usePersistentMealStore();
+	const { setMeal, setNewMealId } = useCurrentMealStore();
+
+	function handleClick(mealId: string) {
+		// Navigate to existing meal details
+		const meal = getMealById(mealId);
+		if (!meal) {
+			return;
+		}
+		setMeal(meal);
+		setNewMealId();
+	}
+
 	return (
-		<IonItem lines='none' className='ion-margin-vertical' routerLink={`/meals/existing/${meal.id}`}>
+		<IonItem lines='none' className='ion-margin-vertical' style={{ borderRadius: "8px" }} onClick={() => handleClick(meal.id)} routerLink='/meals/new'>
 			<IonThumbnail slot='end' style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
 				<AcuteScoreProgressbar mealItems={meal.items} style={{ width: "100%", height: "100%", margin: "0 auto" }} />
 			</IonThumbnail>
@@ -59,8 +72,8 @@ function MealCard({ meal }: { meal: Meal }) {
 
 			<IonLabel>
 				<h2>{meal.name}</h2>
-				<p>{new Date(meal.timestamp).toLocaleString()}</p>
-				<p>{meal.items.reduce((total, item) => total + item.kcalPerUnit * item.quantity, 0)} kcal</p>
+				<p>{getMealTimeString(meal)}</p>
+				<p>{calculateTotalCalories(meal)} kcal </p>
 			</IonLabel>
 		</IonItem>
 	);

@@ -3,7 +3,7 @@ import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { useState } from "react";
 import { useIonRouter } from "@ionic/react";
 import { arrowForward, camera, trash } from "ionicons/icons";
-import { fetchMealFromAPI } from "../../api/api";
+import { fetchAiMealFromAPI } from "../../api/api";
 import { useCurrentMealStore } from "../../stores/currentMealStore";
 
 const AiMealAdd = () => {
@@ -28,12 +28,10 @@ const AiMealAdd = () => {
 		}
 		setLoading(true);
 		try {
-			const meal = await fetchMealFromAPI(images, textualData);
+			const meal = await fetchAiMealFromAPI(images, textualData);
 			meal.items.forEach((item) => {
 				addMealItem(item);
 			});
-			setImage(images[0]); // Set the first image as the meal image
-			setName(meal.name); // Set the meal name from the API response
 			// Optionally, you can set the meal image or other properties here
 			setLoading(false);
 			router.goBack();
@@ -69,7 +67,7 @@ const AiMealAdd = () => {
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar>
+				<IonToolbar className='ion-padding-top'>
 					<IonButtons slot='start'>
 						<IonBackButton />
 					</IonButtons>

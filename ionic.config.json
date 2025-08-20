@@ -1,7 +1,7 @@
 {
-  "name": "insulin",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "react-vite"
+	"name": "insulin",
+	"integrations": {
+		"capacitor": {}
+	},
+	"type": "react"
 }

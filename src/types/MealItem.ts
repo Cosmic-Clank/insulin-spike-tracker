@@ -11,13 +11,16 @@ export enum Unit {
 export type MealItem = {
 	id: string;
 	name: string;
+	image?: string;
+
+	servingSize: number;
+	servingUnit: Unit;
+	amount: number;
+	kcalPerServing: number;
+	carbPerServing_g: number;
+	satFatPerServing_g: number;
+	source?: string;
+
 	fii: number;
-
-	quantity: number;
-	unit: Unit;
-	kcalPerUnit: number;
-
-	carb_g: number;
 	gi: number;
-	satFat_g: number;
 };

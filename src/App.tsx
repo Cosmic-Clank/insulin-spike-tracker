@@ -33,12 +33,8 @@ import "@ionic/react/css/palettes/dark.class.css";
 
 /* Theme variables */
 import "./theme/variables.css";
-import PhotoReview from "./pages/camera/PhotoReview";
-import CameraHome from "./pages/camera/CameraHome";
 import Settings from "./pages/settings/Settings";
 import AddMeal from "./pages/meal/Meals";
-import NewMeal from "./pages/meal/NewMeal";
-import ExistingMeal from "./pages/meal/ExistingMeal";
 import AiMealAdd from "./pages/meal/AiMealAdd";
 import PreviewMeal from "./pages/meal/PreviewMeal";
 
@@ -52,18 +48,13 @@ const App: React.FC = () => (
 					<Route exact path='/dashboard'>
 						<Dashboard />
 					</Route>
+
 					<Route exact path='/meals'>
 						<AddMeal />
 					</Route>
 
-					<Route exact path='/meals/current'>
-						<PreviewMeal />
-					</Route>
-					<Route exact path='/meals/existing/:mealId'>
-						<ExistingMeal />
-					</Route>
 					<Route exact path='/meals/new'>
-						<NewMeal />
+						<PreviewMeal />
 					</Route>
 					<Route exact path='/meals/new/ai'>
 						<AiMealAdd />
@@ -77,18 +68,18 @@ const App: React.FC = () => (
 						<Redirect to='/dashboard' />
 					</Route>
 				</IonRouterOutlet>
-				<IonTabBar slot='bottom'>
+				<IonTabBar slot='bottom' className='ion-padding-bottom'>
 					<IonTabButton tab='dashboard' href='/dashboard'>
 						<IonIcon size='large' aria-hidden='true' icon={home} />
-						<IonLabel style={{ fontSize: "10px", marginTop: "4px" }}>Dashboard</IonLabel>
+						<IonLabel style={{ fontSize: "10px" }}>Dashboard</IonLabel>
 					</IonTabButton>
 					<IonTabButton tab='addMeal' href='/meals'>
-						<IonIcon size='large' aria-hidden='true' icon={addCircle} />
-						<IonLabel style={{ fontSize: "10px", marginTop: "4px" }}>Add Meal</IonLabel>
+						<IonIcon style={{ fontSize: "50px" }} aria-hidden='true' icon={addCircle} />
+						{/* <IonLabel style={{ fontSize: "10px" }}>Add Meal</IonLabel> */}
 					</IonTabButton>
 					<IonTabButton tab='settings' href='/settings'>
 						<IonIcon size='large' aria-hidden='true' icon={cog} />
-						<IonLabel style={{ fontSize: "10px", marginTop: "4px" }}>Settings</IonLabel>
+						<IonLabel style={{ fontSize: "10px" }}>Settings</IonLabel>
 					</IonTabButton>
 				</IonTabBar>
 			</IonTabs>

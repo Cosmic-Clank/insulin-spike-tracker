@@ -1,18 +1,25 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonText, IonLabel } from "@ionic/react";
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonText, IonLabel, IonItem, IonThumbnail, IonImg, IonIcon } from "@ionic/react";
 import React from "react";
 import { calculateAcuteScore, usePersistentMealStore } from "../../stores/persistentMealStore";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import { calculateChronicScore } from "../../utils";
+import { calculateChronicScore, calculateTotalCalories, calculateTotalCarbohydrates, calculateTotalSaturatedFat, getMealTimeString } from "../../utils";
+import { useCurrentMealStore } from "../../stores/currentMealStore";
+import AcuteScoreProgressbar from "../../components/AcuteScoreProgressbar";
+import { Meal } from "../../types/Meal";
+import { batteryCharging, chevronForward, chevronForwardCircle, flame, information, informationCircle, pizza } from "ionicons/icons";
+import { NutrimentComponent } from "../../components/NutrimentComponent";
 
 const Dashboard: React.FC = () => {
 	const meals = usePersistentMealStore((s) => s.meals);
 	const chronicScore = calculateChronicScore(meals);
+	const { getMealById } = usePersistentMealStore();
+	const { setMeal } = useCurrentMealStore();
 
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar>
+				<IonToolbar className='ion-padding-top ion-text-center'>
 					<IonTitle>Dashboard</IonTitle>
 				</IonToolbar>
 			</IonHeader>
@@ -84,16 +91,63 @@ const Dashboard: React.FC = () => {
 						</IonCard>
 
 						<IonText color='medium' style={{ marginBottom: "1rem" }}>
-							Previous Meals
+							Meals
 						</IonText>
 
 						{/* Other Meals */}
 						{meals.map((meal) => {
-							const acute = calculateAcuteScore(meal.items);
-							const statusColor = acute < 35 ? "#2ecc71" : acute < 60 ? "#f1c40f" : "#e74c3c";
+							return <MealCard key={meal.id} meal={meal} />;
+						})}
+					</>
+				)}
+			</IonContent>
+		</IonPage>
+	);
+};
 
-							return (
+export default Dashboard;
+
+function MealCard({ meal }: { meal: Meal }) {
+	const { getMealById } = usePersistentMealStore();
+	const { setMeal } = useCurrentMealStore();
+
+	const handleMealClick = (mealId: string) => {
+		// Navigate to existing meal details
+		const meal = getMealById(mealId);
+		if (!meal) {
+			return;
+		}
+		setMeal(meal);
+	};
+
+	return (
+		<IonItem lines='none' onClick={() => handleMealClick(meal.id)} routerLink='/meals/new' key={meal.id} style={{ borderRadius: "8px", marginBottom: "1rem", marginTop: "1rem" }}>
+			<IonThumbnail slot='end' style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+				<AcuteScoreProgressbar mealItems={meal.items} style={{ width: "100%", height: "100%", margin: "0 auto" }} />
+			</IonThumbnail>
+			<IonIcon slot='end' icon={chevronForward} size='small' />
+			{meal.image && (
+				<IonThumbnail slot='start' style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+					<IonImg src={meal.image ?? ""} alt='Meal Image' style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }} />
+				</IonThumbnail>
+			)}
+
+			<IonLabel>
+				<h2>{meal.name}</h2>
+				<p>{getMealTimeString(meal)}</p>
+				<NutrimentComponent nutrimentIcon={flame} nutrimentIconColor={"#ff5151ff"} nutrimentName={"Calories"} nutrimentValue={calculateTotalCalories(meal)} />
+				<NutrimentComponent nutrimentIcon={pizza} nutrimentIconColor={"#ffcc00ff"} nutrimentName={"Carbs"} nutrimentValue={calculateTotalCarbohydrates(meal)} />
+				<NutrimentComponent nutrimentIcon={batteryCharging} nutrimentIconColor={"#3880ff"} nutrimentName={"Sat. Fat"} nutrimentValue={calculateTotalSaturatedFat(meal)} />
+			</IonLabel>
+		</IonItem>
+	);
+}
+
+{
+	/* 
 								<IonCard
+									onClick={() => handleMealClick(meal.id)}
+									routerLink='/meals/new'
 									key={meal.id}
 									className='ion-padding'
 									style={{
@@ -114,23 +168,13 @@ const Dashboard: React.FC = () => {
 												marginBottom: "1rem",
 											}}>
 											<div style={{ width: 80, height: 80 }}>
-												<CircularProgressbar
-													value={acute}
-													maxValue={100}
-													text={`${acute}`}
-													styles={buildStyles({
-														textSize: "1.5rem",
-														pathColor: statusColor,
-														textColor: statusColor,
-														trailColor: "#eee",
-													})}
-												/>
+												<AcuteScoreProgressbar mealItems={meal.items} />
 											</div>
 											<IonText color='medium'>
 												<p style={{ fontSize: "0.9rem", marginTop: "0.5rem" }}>Acute Score</p>
 											</IonText>
 											<IonText color='medium'>
-												<p style={{ fontSize: "0.8rem" }}>{meal.items.reduce((sum, item) => sum + item.kcalPerUnit * item.quantity, 0)} kcal</p>
+												<p style={{ fontSize: "0.8rem" }}>{meal.items.reduce((sum, item) => sum + item.kcalPerServing * item.amount, 0)} kcal</p>
 											</IonText>
 										</div>
 
@@ -146,11 +190,11 @@ const Dashboard: React.FC = () => {
 													<IonText color='medium'>{item.name}</IonText>
 													<div className='ion-margin-bottom' style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
 														<IonLabel color='dark'>
-															FII: {item.fii} | kcal: {item.kcalPerUnit * item.quantity}
+															FII: {item.fii} | kcal: {item.kcalPerServing * item.amount}
 														</IonLabel>
 														<IonLabel color='medium'>
-															{item.kcalPerUnit}kcal * {item.quantity}
-															{item.unit}
+															{item.kcalPerServing}kcal * {item.amount}
+															{item.servingUnit}
 														</IonLabel>
 													</div>
 												</div>
@@ -176,14 +220,6 @@ const Dashboard: React.FC = () => {
 											</p>
 										</IonText>
 									</IonCardContent>
-								</IonCard>
-							);
-						})}
-					</>
-				)}
-			</IonContent>
-		</IonPage>
-	);
-};
-
-export default Dashboard;
+								</IonCard> 
+								*/
+}

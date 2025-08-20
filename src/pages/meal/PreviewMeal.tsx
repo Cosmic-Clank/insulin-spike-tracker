@@ -1,36 +1,38 @@
-import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonImg, IonSkeletonText, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonText, IonInput, IonButtons, IonBackButton, IonButton, useIonRouter, IonToast, IonIcon, IonSelect, IonSelectOption, IonCardSubtitle, IonFab, IonFabButton, IonFabList, IonActionSheet, IonAlert } from "@ionic/react";
-import { useEffect, useState } from "react";
-import { Meal } from "../../types/Meal";
+import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonImg, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonText, IonInput, IonButtons, IonBackButton, IonButton, useIonRouter, IonToast, IonIcon, IonSelect, IonSelectOption, IonFab, IonFabButton, IonActionSheet, IonAlert, IonThumbnail, IonModal, IonItem, IonLabel, IonItemDivider, IonList, IonNote, IonFabList } from "@ionic/react";
+import { useState } from "react";
+
 import { MealItem, Unit } from "../../types/MealItem";
 import { usePersistentMealStore } from "../../stores/persistentMealStore"; // adjust path as needed
-import { add, addCircle, barcode, camera, close, cloud, desktop, ellipse, ellipsisHorizontal, ellipsisVertical, pencil, pencilOutline, trash } from "ionicons/icons";
+import { add, barcode, batteryCharging, camera, chevronBack, chevronForward, chevronUp, close, create, desktop, ellipsisVertical, flame, information, pencil, pizza, save, saveSharp, trash } from "ionicons/icons";
 import { useCurrentMealStore } from "../../stores/currentMealStore";
 import LoadingPreview from "./LoadingPreviewComponent";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { fetchBarcodeMealItemFromAPI } from "../../api/api";
+import { calculateTotalCalories, getMealTimeString } from "../../utils";
+import { NutrimentComponent } from "../../components/NutrimentComponent";
 
-const PreviewMeal = ({ existingMeal }: { existingMeal?: Meal }) => {
-	const { meal, setMeal, deleteMealItem, addEmptyMealItem, setImage, setNewMealId } = useCurrentMealStore();
-	useEffect(() => {
-		if (existingMeal) {
-			setMeal(existingMeal);
-		}
-	}, [existingMeal, setMeal]);
+const PreviewMeal = () => {
+	const { meal, setMeal, deleteMealItem, addEmptyMealItem, setImage, setNewMealId, resetMeal, addMealItem } = useCurrentMealStore();
 
 	const [loading, setLoading] = useState(false);
 	const [showToast, setShowToast] = useState(false);
+	const [toastMessage, setToastMessage] = useState("");
 
 	const { addMeal, deleteMeal } = usePersistentMealStore();
 	const router = useIonRouter();
 
+	const [modalItem, setModalItem] = useState<MealItem | null>(null);
+
 	const updateItem = (id: string, field: keyof MealItem, value: string) => {
 		if (!meal) return;
-		const updatedItems = meal.items.map((item) => (item.id === id ? { ...item, [field]: field === "name" || "unit" ? value : Number(value) } : item));
+		const updatedItems = meal.items.map((item) => (item.id === id ? { ...item, [field]: field === "name" || field === "servingUnit" ? value : Number(value) } : item));
 		setMeal({ ...meal, items: updatedItems });
+		// Update modalItem if it's open and matches the updated item
+		setModalItem((prev) => (prev && prev.id === id ? { ...prev, [field]: field === "name" || field === "servingUnit" ? value : Number(value) } : prev));
 	};
 
 	const handleLogMeal = () => {
 		if (!meal) return;
-		setNewMealId(); // Generate a new ID for the meal
 		addMeal(meal); // ✅ Adds full meal to Zustand
 		setShowToast(true);
 		setTimeout(() => {
@@ -58,16 +60,45 @@ const PreviewMeal = ({ existingMeal }: { existingMeal?: Meal }) => {
 		}
 	};
 
+	const scanBarcodeAndAddItem = async () => {
+		try {
+			const photo = await Camera.getPhoto({
+				resultType: CameraResultType.Base64,
+				source: CameraSource.Camera,
+				quality: 90,
+				saveToGallery: false,
+			});
+
+			setLoading(true);
+
+			if (photo.base64String) {
+				const base64Image = `data:image/jpeg;base64,${photo.base64String}`;
+				// Call your API to decode the barcode and add the item
+				const barcodeMealItem = await fetchBarcodeMealItemFromAPI(base64Image);
+				addMealItem(barcodeMealItem);
+				setLoading(false);
+				setToastMessage("Item added successfully");
+			}
+		} catch (err: unknown) {
+			if (typeof err === "object" && err !== null && "message" in err) {
+				setToastMessage(typeof err.message === "string" && err.message ? err.message : "Failed to scan barcode.");
+				setLoading(false);
+			} else {
+				setToastMessage("Camera access was cancelled or failed.");
+				setLoading(false);
+			}
+		}
+		setShowToast(true);
+	};
+
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar>
+				<IonToolbar className='ion-padding-top'>
 					<IonButtons slot='start'>
 						<IonBackButton defaultHref='/meals' />
 					</IonButtons>
-					<IonButton id='open-meal-action-sheet' slot='end' fill='clear' color='dark'>
-						<IonIcon icon={ellipsisVertical} />
-					</IonButton>
+
 					<IonTitle>Review Meal</IonTitle>
 				</IonToolbar>
 			</IonHeader>
@@ -98,81 +129,135 @@ const PreviewMeal = ({ existingMeal }: { existingMeal?: Meal }) => {
 					<>
 						<IonCard className='ion-margin-bottom'>
 							<IonCardHeader>
-								<IonCardTitle>{meal.name}</IonCardTitle>
+								<IonCardTitle>
+									<IonInput
+										value={meal.name}
+										placeholder='Enter item name'
+										onIonInput={(e) => setMeal({ ...meal, name: e.detail.value! })}
+										style={{
+											color: "white",
+											fontSize: "20px",
+										}}>
+										<IonIcon slot='end' icon={create} aria-hidden='true'></IonIcon>
+									</IonInput>
+								</IonCardTitle>
 								<IonText color='medium'>
 									<p style={{ marginTop: "4px" }}>
 										Total Items: {meal.items.length} <br />
-										Logged at: {new Date(meal.timestamp).toLocaleTimeString()}
+										Total Calories: {calculateTotalCalories(meal)} kcal <br />
+										Logged at: {getMealTimeString(meal)}
 									</p>
 								</IonText>
 							</IonCardHeader>
 						</IonCard>
 
-						{meal.items.map((item) => (
-							<IonCard key={item.id} className='ion-margin-bottom'>
-								<IonCardHeader>
-									<IonCardTitle>{item.name}</IonCardTitle>
-								</IonCardHeader>
-								<IonCardContent>
-									<IonInput fill='outline' labelPlacement='start' type='number' style={{ textAlign: "right" }} label='FII' value={item.fii} placeholder='Enter FII' onIonInput={(e) => updateItem(item.id, "fii", e.detail.value!)} />
-									<IonSelect className='ion-margin-top' label='Unit' fill='outline' value={item.unit} onIonChange={(e) => updateItem(item.id, "unit", e.detail.value)}>
-										{Object.values(Unit).map((u) => (
-											<IonSelectOption key={u} value={u}>
-												{u}
-											</IonSelectOption>
-										))}
-									</IonSelect>
-									<IonInput className='ion-margin-top' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label={`kcals per (${item.unit})`} value={item.kcalPerUnit} placeholder='Enter kcal for one unit' onIonInput={(e) => updateItem(item.id, "kcalPerUnit", e.detail.value!)} />
-									<IonInput className='ion-margin-vertical' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label='Quantity' value={item.quantity} placeholder={`Enter quantity (${item.unit})`} onIonInput={(e) => updateItem(item.id, "quantity", e.detail.value!)} />
-									<IonInput className='ion-margin-vertical' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label='Carb (g)' value={item.carb_g} placeholder={`Enter carbs (g)`} onIonInput={(e) => updateItem(item.id, "carb_g", e.detail.value!)} />
-									<IonInput className='ion-margin-vertical' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label='Glycemic Index' value={item.gi} placeholder={`Enter glycemic index`} onIonInput={(e) => updateItem(item.id, "gi", e.detail.value!)} />
-									<IonInput className='ion-margin-vertical' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label='Saturated Fat (g)' value={item.gi} placeholder={`Enter saturated fat (g)`} onIonInput={(e) => updateItem(item.id, "satFat_g", e.detail.value!)} />
-									<div className='' style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-										<IonText>Total Calories: {item.kcalPerUnit && item.quantity ? (Number(item.kcalPerUnit) * Number(item.quantity)).toFixed(0) : 0} kcal</IonText>
-										<IonButton slot='icon-only' color='danger' onClick={() => deleteMealItem(item.id)}>
-											<IonIcon slot='icon-only' icon={trash} />
+						<IonModal isOpen={!!modalItem} onDidDismiss={() => setModalItem(null)}>
+							<IonHeader>
+								<IonToolbar>
+									<IonTitle>Edit: {modalItem?.name}</IonTitle>
+									<IonButtons slot='end'>
+										<IonButton slot='icon-only' size='large' onClick={() => setModalItem(null)}>
+											<IonIcon slot='icon-only' icon={close} />
 										</IonButton>
-									</div>
-								</IonCardContent>
-							</IonCard>
-						))}
+									</IonButtons>
+								</IonToolbar>
+							</IonHeader>
+							<IonContent className='ion-padding'>
+								{modalItem && (
+									<IonCard>
+										<IonCardHeader style={{ display: "flex", flexDirection: "row", gap: "12px", justifyContent: "space-between" }}>
+											<IonInput
+												value={modalItem.name}
+												placeholder='Enter item name'
+												onIonInput={(e) => updateItem(modalItem.id, "name", e.detail.value!)}
+												style={{
+													color: "white",
+													fontSize: "20px",
+												}}>
+												<IonIcon slot='end' icon={create} aria-hidden='true'></IonIcon>
+											</IonInput>
+											{modalItem.image ? (
+												<IonThumbnail>
+													<img alt='Silhouette of mountains' src={modalItem.image} />
+												</IonThumbnail>
+											) : null}
+										</IonCardHeader>
+										<IonCardContent>
+											<IonInput className='ion-margin-vertical' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label='Serving Size' value={modalItem.servingSize} placeholder={`Enter Serving Size`} onIonInput={(e) => updateItem(modalItem.id, "servingSize", e.detail.value!)} />
+											<IonSelect className='ion-margin-top' label='Serving Unit' fill='outline' value={modalItem.servingUnit} onIonChange={(e) => updateItem(modalItem.id, "servingUnit", e.detail.value)}>
+												{Object.values(Unit).map((u) => (
+													<IonSelectOption key={u} value={u}>
+														{u}
+													</IonSelectOption>
+												))}
+											</IonSelect>
+											<IonInput className='ion-margin-vertical' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label='Amount' value={modalItem.amount} placeholder={`Enter Amount`} onIonInput={(e) => updateItem(modalItem.id, "amount", e.detail.value!)} />
+											<IonInput className='ion-margin-top' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label={`kcals per serving`} value={modalItem.kcalPerServing} placeholder='Enter kcal for one serving' onIonInput={(e) => updateItem(modalItem.id, "kcalPerServing", e.detail.value!)} />
+											<IonInput className='ion-margin-vertical' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label='Carb per serving (g)' value={modalItem.carbPerServing_g} placeholder={`Enter carbs per serving (g)`} onIonInput={(e) => updateItem(modalItem.id, "carbPerServing_g", e.detail.value!)} />
+											<IonInput className='ion-margin-vertical' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label='Saturated Fat per serving (g)' value={modalItem.satFatPerServing_g} placeholder={`Enter saturated fat per serving (g)`} onIonInput={(e) => updateItem(modalItem.id, "satFatPerServing_g", e.detail.value!)} />
+											<IonInput fill='outline' labelPlacement='start' type='number' style={{ textAlign: "right" }} label='FII' value={modalItem.fii} placeholder='Enter FII' onIonInput={(e) => updateItem(modalItem.id, "fii", e.detail.value!)} />
+											<IonInput className='ion-margin-vertical' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label='Glycemic Index' value={modalItem.gi} placeholder={`Enter glycemic index`} onIonInput={(e) => updateItem(modalItem.id, "gi", e.detail.value!)} />
+											<div className='' style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "12px" }}>
+												<IonText>Total Calories: {modalItem.kcalPerServing && modalItem.amount ? (Number(modalItem.kcalPerServing) * Number(modalItem.amount)).toFixed(2) : 0} kcal</IonText>
+												<IonText>Total Carbs: {modalItem.carbPerServing_g && modalItem.amount ? (Number(modalItem.carbPerServing_g) * Number(modalItem.amount)).toFixed(2) : 0} g</IonText>
+												<IonText>Total Saturated Fat: {modalItem.satFatPerServing_g && modalItem.amount ? (Number(modalItem.satFatPerServing_g) * Number(modalItem.amount)).toFixed(2) : 0} g</IonText>
+												{modalItem.source ? <IonText>Source: {modalItem.source}</IonText> : null}
+
+												<IonButton onClick={() => setModalItem(null)}>
+													<IonIcon slot='icon-only' icon={save} />
+												</IonButton>
+
+												<IonButton
+													slot='icon-only'
+													color='danger'
+													onClick={() => {
+														deleteMealItem(modalItem.id);
+														setModalItem(null);
+													}}>
+													<IonIcon slot='icon-only' icon={trash} />
+												</IonButton>
+											</div>
+										</IonCardContent>
+									</IonCard>
+								)}
+							</IonContent>
+						</IonModal>
+
+						{meal.items.length === 0 ? (
+							<IonItem lines='none' className='ion-text-center ion-padding'>
+								<IonText>No items</IonText>
+							</IonItem>
+						) : (
+							<IonList inset={true}>
+								{meal.items.map((item) => (
+									<IonItem button key={item.id} onClick={() => setModalItem(item)}>
+										{item.image ? (
+											<IonThumbnail slot='end'>
+												<IonImg alt='Silhouette of mountains' src={item.image} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }} />
+											</IonThumbnail>
+										) : null}
+										<IonLabel>
+											<IonTitle>{item.name}</IonTitle>
+											<br />
+											<IonNote color='medium' className='ion-text-wrap'>
+												<NutrimentComponent nutrimentName='Calories' nutrimentValue={item.kcalPerServing * item.amount} nutrimentIcon={flame} nutrimentIconColor='#ff5151ff' />
+												<NutrimentComponent nutrimentName='Carbohydrates' nutrimentValue={item.carbPerServing_g * item.amount} nutrimentIcon={pizza} nutrimentIconColor='#ffcc00ff' />
+												<NutrimentComponent nutrimentName='Saturated Fats' nutrimentValue={item.satFatPerServing_g * item.amount} nutrimentIcon={batteryCharging} nutrimentIconColor='#0091ffff' />
+												<NutrimentComponent nutrimentName='FII' nutrimentValue={item.fii * item.amount} nutrimentIcon={information} nutrimentIconColor='green' />
+												<NutrimentComponent nutrimentName='GI' nutrimentValue={item.gi * item.amount} nutrimentIcon={information} nutrimentIconColor='green' />
+											</IonNote>
+										</IonLabel>
+										<IonIcon slot='end' icon={chevronForward} />
+									</IonItem>
+								))}
+							</IonList>
+						)}
 
 						<div className='ion-text-center ion-margin-vertical'>
 							<IonButton id='open-meal-item-action-sheet' size='large' shape='round' color='primary'>
 								<IonIcon slot='icon-only' icon={add} size='small' />
 							</IonButton>
 						</div>
-
-						<IonActionSheet
-							trigger='open-meal-action-sheet'
-							header='Actions'
-							buttons={[
-								{
-									text: "Delete Meal",
-									role: "destructive",
-									icon: trash,
-									data: {
-										action: "delete",
-									},
-								},
-								{
-									text: "Cancel",
-									role: "cancel",
-									icon: close,
-									data: {
-										action: "cancel",
-									},
-								},
-							]}
-							onDidDismiss={({ detail }) => {
-								if (detail.data.action === "delete") {
-									deleteMeal(meal.id);
-									setTimeout(() => {
-										router.push("/meals", "root");
-									}, 100); // slight delay to ensure state updates
-								}
-							}}
-						/>
 
 						<IonActionSheet
 							trigger='open-meal-item-action-sheet'
@@ -196,16 +281,10 @@ const PreviewMeal = ({ existingMeal }: { existingMeal?: Meal }) => {
 									text: "Barcode",
 									icon: barcode,
 									data: {
-										action: "manual",
+										action: "barcode",
 									},
 								},
-								{
-									text: "Database",
-									icon: cloud,
-									data: {
-										action: "database",
-									},
-								},
+
 								{
 									text: "Cancel",
 									role: "cancel",
@@ -216,22 +295,38 @@ const PreviewMeal = ({ existingMeal }: { existingMeal?: Meal }) => {
 								},
 							]}
 							onDidDismiss={({ detail }) => {
+								if (!detail.data || detail.data.action === "cancel") return;
 								if (detail.data.action === "ai") {
 									router.push("/meals/new/ai");
 								} else if (detail.data.action === "manual") {
 									addEmptyMealItem();
+								} else if (detail.data.action === "barcode") {
+									scanBarcodeAndAddItem();
 								}
 							}}
 						/>
 
-						<IonCard className='ion-no-margin'>
-							<IonCardContent className='ion-text-center'>
-								<IonButton expand='block' shape='round' color='primary' id='log-meal-alert'>
-									<IonIcon slot='end' icon={pencilOutline} size='small' />
-									Log Meal
-								</IonButton>
-							</IonCardContent>
-						</IonCard>
+						<IonFab slot='fixed' vertical='bottom' horizontal='end'>
+							<IonFabButton>
+								<IonIcon size='small' icon={chevronUp}></IonIcon>
+							</IonFabButton>
+							<IonFabList side='top'>
+								<IonFabButton
+									color='danger'
+									onClick={() => {
+										deleteMeal(meal.id);
+										resetMeal(); // Reset the current meal state
+										setTimeout(() => {
+											router.goBack();
+										}, 100);
+									}}>
+									<IonIcon icon={trash}></IonIcon>
+								</IonFabButton>
+								<IonFabButton color='success' id='log-meal-alert'>
+									<IonIcon icon={save}></IonIcon>
+								</IonFabButton>
+							</IonFabList>
+						</IonFab>
 
 						<IonAlert
 							header='Warning'
@@ -249,7 +344,7 @@ const PreviewMeal = ({ existingMeal }: { existingMeal?: Meal }) => {
 								},
 							]}></IonAlert>
 
-						<IonToast isOpen={showToast} message='Meal logged successfully' duration={1200} color='success' onDidDismiss={() => setShowToast(false)} />
+						<IonToast isOpen={showToast} message={toastMessage} duration={2200} color='success' onDidDismiss={() => setShowToast(false)} />
 					</>
 				)}
 			</IonContent>

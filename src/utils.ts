@@ -7,10 +7,10 @@ export const calculateChronicScore = (meals: Meal[]): number => {
 	let count = 0;
 	meals.map((meal) => {
 		const chronicLoad = meal.items.reduce((sum, item) => {
-			const glycemicLoad = item.gi * item.carb_g * 0.01;
-			const kcal = item.kcalPerUnit * item.quantity;
+			const glycemicLoad = item.gi * item.carbPerServing_g * item.amount * 0.01;
+			const kcal = item.kcalPerServing * item.amount;
 
-			return sum + (0.5 * glycemicLoad + 0.3 * item.satFat_g + 0.2 * (kcal / tdee));
+			return sum + (0.5 * glycemicLoad + 0.3 * item.satFatPerServing_g * item.amount + 0.2 * (kcal / tdee));
 		}, 0);
 		sum += chronicLoad;
 		count += 1;
@@ -45,4 +45,20 @@ export const calculateTdee = (weight: number, height: number, age: number, activ
 		default:
 			return Math.round(bmr * 1.2); // Default to sedentary if no activity level is set
 	}
+};
+
+export const calculateTotalCalories = (meal: Meal): number => {
+	return meal.items.reduce((total, item) => total + item.kcalPerServing * item.amount, 0);
+};
+
+export const calculateTotalCarbohydrates = (meal: Meal): number => {
+	return meal.items.reduce((total, item) => total + item.carbPerServing_g * item.amount, 0);
+};
+
+export const calculateTotalSaturatedFat = (meal: Meal): number => {
+	return meal.items.reduce((total, item) => total + item.satFatPerServing_g * item.amount, 0);
+};
+
+export const getMealTimeString = (meal: Meal): string => {
+	return new Date(meal.timestamp).toLocaleString();
 };
