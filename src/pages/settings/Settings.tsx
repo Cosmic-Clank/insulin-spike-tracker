@@ -9,7 +9,7 @@ const Settings: React.FC = () => {
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar className='ion-padding-top ion-text-center'>
+				<IonToolbar className='ion-text-center'>
 					<IonTitle>Settings</IonTitle>
 				</IonToolbar>
 			</IonHeader>

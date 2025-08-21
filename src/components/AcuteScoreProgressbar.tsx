@@ -1,10 +1,10 @@
 import React from "react";
-import { MealItem } from "../types/MealItem";
 import { buildStyles, CircularProgressbar } from "react-circular-progressbar";
-import { calculateAcuteScore } from "../stores/persistentMealStore";
+import { calculateAcuteScore } from "../utils";
+import { Meal } from "../types/Meal";
 
-function AcuteScoreProgressbar({ style, mealItems }: { style?: React.CSSProperties; mealItems: MealItem[] }) {
-	const acuteScore = calculateAcuteScore(mealItems);
+function AcuteScoreProgressbar({ style, meal }: { style?: React.CSSProperties; meal: Meal }) {
+	const acuteScore = calculateAcuteScore(meal);
 	return (
 		<div style={{ ...style, display: "flex", justifyContent: "center", alignItems: "center" }}>
 			<CircularProgressbar

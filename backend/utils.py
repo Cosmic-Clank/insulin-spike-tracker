@@ -1,14 +1,13 @@
 import base64
-import io
 import os
 import time
 import uuid
-from PIL import Image
 from typing import Optional
 
+import cv2
 import httpx
 import numpy as np
-from pyzbar.pyzbar import decode as zbar_decode, ZBarSymbol
+from pyzbar.pyzbar import decode, ZBarSymbol
 from services import get_ai_fii_gi
 
 
@@ -20,61 +19,68 @@ def save_base64_images(images: list[str], folder: str = "images") -> None:
             f.write(image_data)
 
 
-def _strip_base64_prefix(b64: str) -> str:
-    if "," in b64 and b64.strip().lower().startswith("data:"):
-        return b64.split(",", 1)[1]
-    return b64
+def preprocess(img: np.ndarray) -> np.ndarray:
+    """Preprocess to make barcodes more readable."""
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    den = cv2.fastNlMeansDenoising(gray, h=7)
+    # bump contrast
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    cla = clahe.apply(den)
+    # adaptive threshold
+    th = cv2.adaptiveThreshold(
+        cla, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY, 41, 10
+    )
+    return th
 
 
-def _pil_from_base64(b64: str) -> Image.Image:
-    raw = base64.b64decode(_strip_base64_prefix(b64))
-    return Image.open(io.BytesIO(raw)).convert("RGB")
+def decode_barcode_from_base64(b64_string: str) -> str | None:
+    """Return decoded barcode text or None."""
+    if b64_string.startswith("data:image"):
+        b64_string = b64_string.split(",", 1)[-1]
+    # decode base64 -> image
+    img_data = base64.b64decode(b64_string)
+    np_arr = np.frombuffer(img_data, np.uint8)
+    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    cv2.imwrite("decoded_image.png", img)
 
+    def try_decode(image: np.ndarray):
+        codes = decode(image, [
+            ZBarSymbol.EAN13,
+            ZBarSymbol.EAN8,
+            ZBarSymbol.UPCA,
+            ZBarSymbol.UPCE,
+            ZBarSymbol.CODE128,
+            ZBarSymbol.CODE39,
+            ZBarSymbol.CODABAR,
+            ZBarSymbol.QRCODE,
+        ])
+        if codes:
+            return codes[0].data.decode("utf-8", errors="ignore")
+        return None
 
-def _rotate(img: Image.Image, deg: int) -> Image.Image:
-    return img.rotate(deg, expand=True)
+    # Try raw image and preprocessed image at different rotations
+    for angle in [0, 90, 180, 270]:
+        if angle != 0:
+            # Rotate image
+            rot_img = cv2.rotate(img, {
+                90: cv2.ROTATE_90_CLOCKWISE,
+                180: cv2.ROTATE_180,
+                270: cv2.ROTATE_90_COUNTERCLOCKWISE
+            }[angle])
+        else:
+            rot_img = img
 
+        result = try_decode(rot_img)
+        if result:
+            return result
 
-def decode_barcode_from_base64(img_b64: str) -> Optional[str]:
-    """
-    Try multiple orientations + grayscale/contrast tweaks to read 1D barcodes.
-    Returns the first decoded string (EAN/UPC/Code128/etc) or None.
-    """
-    img = _pil_from_base64(img_b64)
-
-    # Try a few rotations
-    rotations = [0, 90, 180, 270]
-    for r in rotations:
-        frame = _rotate(img, r) if r else img
-
-        # Convert to numpy and grayscale
-        arr = np.array(frame)
-        gray = np.dot(arr[..., :3], [0.299, 0.587, 0.114]).astype(np.uint8)
-
-        # Light contrast stretch
-        p2, p98 = np.percentile(gray, (2, 98))
-        if p98 > p2:
-            gray = np.clip((gray - p2) * (255.0 / (p98 - p2)),
-                           0, 255).astype(np.uint8)
-
-        pil_gray = Image.fromarray(gray)
-
-        # Try reading multiple symbologies
-        results = zbar_decode(
-            pil_gray,
-            symbols=[
-                ZBarSymbol.EAN13,
-                ZBarSymbol.EAN8,
-                ZBarSymbol.UPCA,
-                ZBarSymbol.UPCE,
-                ZBarSymbol.CODE128,
-                ZBarSymbol.CODE39,
-                ZBarSymbol.QRCODE,  # just in case
-            ],
-        )
-        if results:
-            # Pick the first result
-            return results[0].data.decode("utf-8").strip()
+        # Try preprocessed
+        proc = preprocess(rot_img)
+        proc_bgr = cv2.cvtColor(proc, cv2.COLOR_GRAY2BGR)
+        result = try_decode(proc_bgr)
+        if result:
+            return result
 
     return None
 

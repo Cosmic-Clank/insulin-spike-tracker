@@ -13,7 +13,7 @@ const AddMeal: React.FC = () => {
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar className='ion-padding-top ion-text-center'>
+				<IonToolbar className='ion-text-center'>
 					<IonTitle>Meals</IonTitle>
 				</IonToolbar>
 			</IonHeader>
@@ -62,7 +62,7 @@ function MealCard({ meal }: { meal: Meal }) {
 	return (
 		<IonItem lines='none' className='ion-margin-vertical' style={{ borderRadius: "8px" }} onClick={() => handleClick(meal.id)} routerLink='/meals/new'>
 			<IonThumbnail slot='end' style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-				<AcuteScoreProgressbar mealItems={meal.items} style={{ width: "100%", height: "100%", margin: "0 auto" }} />
+				<AcuteScoreProgressbar meal={meal} style={{ width: "100%", height: "100%", margin: "0 auto" }} />
 			</IonThumbnail>
 			{meal.image && (
 				<IonThumbnail slot='start' style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>

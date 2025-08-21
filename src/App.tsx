@@ -68,7 +68,7 @@ const App: React.FC = () => (
 						<Redirect to='/dashboard' />
 					</Route>
 				</IonRouterOutlet>
-				<IonTabBar slot='bottom' className='ion-padding-bottom'>
+				<IonTabBar slot='bottom'>
 					<IonTabButton tab='dashboard' href='/dashboard'>
 						<IonIcon size='large' aria-hidden='true' icon={home} />
 						<IonLabel style={{ fontSize: "10px" }}>Dashboard</IonLabel>
