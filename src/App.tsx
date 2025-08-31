@@ -29,62 +29,70 @@ import "@ionic/react/css/display.css";
 
 /* import '@ionic/react/css/palettes/dark.always.css'; */
 /* import '@ionic/react/css/palettes/dark.class.css'; */
-import "@ionic/react/css/palettes/dark.class.css";
-
 /* Theme variables */
 import "./theme/variables.css";
 import Settings from "./pages/settings/Settings";
 import AddMeal from "./pages/meal/Meals";
 import AiMealAdd from "./pages/meal/AiMealAdd";
 import PreviewMeal from "./pages/meal/PreviewMeal";
+import { useEffect, useState } from "react";
+import { SafeArea } from "capacitor-plugin-safe-area";
 
 setupIonicReact();
 
-const App: React.FC = () => (
-	<IonApp>
-		<IonReactRouter>
-			<IonTabs>
-				<IonRouterOutlet>
-					<Route exact path='/dashboard'>
-						<Dashboard />
-					</Route>
+const App: React.FC = () => {
+	const [bottom, setBottom] = useState(0);
+	useEffect(() => {
+		SafeArea.getSafeAreaInsets().then(({ insets }) => {
+			setBottom(insets.bottom);
+		});
+	}, []);
+	return (
+		<IonApp>
+			<IonReactRouter>
+				<IonTabs>
+					<IonRouterOutlet>
+						<Route exact path='/dashboard'>
+							<Dashboard />
+						</Route>
 
-					<Route exact path='/meals'>
-						<AddMeal />
-					</Route>
+						<Route exact path='/meals'>
+							<AddMeal />
+						</Route>
 
-					<Route exact path='/meals/new'>
-						<PreviewMeal />
-					</Route>
-					<Route exact path='/meals/new/ai'>
-						<AiMealAdd />
-					</Route>
+						<Route exact path='/meals/new'>
+							<PreviewMeal />
+						</Route>
+						<Route exact path='/meals/new/ai'>
+							<AiMealAdd />
+						</Route>
 
-					<Route exact path='/settings'>
-						<Settings />
-					</Route>
+						<Route exact path='/settings'>
+							<Settings />
+						</Route>
 
-					<Route exact path='/'>
-						<Redirect to='/dashboard' />
-					</Route>
-				</IonRouterOutlet>
-				<IonTabBar slot='bottom'>
-					<IonTabButton tab='dashboard' href='/dashboard'>
-						<IonIcon size='large' aria-hidden='true' icon={home} />
-						<IonLabel style={{ fontSize: "10px" }}>Dashboard</IonLabel>
-					</IonTabButton>
-					<IonTabButton tab='addMeal' href='/meals'>
-						<IonIcon style={{ fontSize: "50px" }} aria-hidden='true' icon={addCircle} />
-						{/* <IonLabel style={{ fontSize: "10px" }}>Add Meal</IonLabel> */}
-					</IonTabButton>
-					<IonTabButton tab='settings' href='/settings'>
-						<IonIcon size='large' aria-hidden='true' icon={cog} />
-						<IonLabel style={{ fontSize: "10px" }}>Settings</IonLabel>
-					</IonTabButton>
-				</IonTabBar>
-			</IonTabs>
-		</IonReactRouter>
-	</IonApp>
-);
+						<Route exact path='/'>
+							<Redirect to='/dashboard' />
+						</Route>
+					</IonRouterOutlet>
+					<IonTabBar style={{ paddingBottom: `${bottom}px` }} slot='bottom'>
+						<IonTabButton tab='dashboard' href='/dashboard'>
+							<IonIcon size='large' aria-hidden='true' icon={home} />
+							<IonLabel style={{ fontSize: "10px" }}>Dashboard</IonLabel>
+						</IonTabButton>
+						<IonTabButton tab='addMeal' href='/meals'>
+							<IonIcon style={{ fontSize: "50px" }} aria-hidden='true' icon={addCircle} />
+							{/* <IonLabel style={{ fontSize: "10px" }}>Add Meal</IonLabel> */}
+						</IonTabButton>
+						<IonTabButton tab='settings' href='/settings'>
+							<IonIcon size='large' aria-hidden='true' icon={cog} />
+							<IonLabel style={{ fontSize: "10px" }}>Settings</IonLabel>
+						</IonTabButton>
+					</IonTabBar>
+				</IonTabs>
+			</IonReactRouter>
+		</IonApp>
+	);
+};
 
 export default App;

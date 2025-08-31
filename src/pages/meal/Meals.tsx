@@ -5,6 +5,7 @@ import AcuteScoreProgressbar from "../../components/AcuteScoreProgressbar";
 import { useCurrentMealStore } from "../../stores/currentMealStore";
 import { Meal } from "../../types/Meal";
 import { calculateTotalCalories, getMealTimeString } from "../../utils";
+import IonToolbarWrapper from "../../components/IonToolbarWrapper";
 
 const AddMeal: React.FC = () => {
 	const { meals } = usePersistentMealStore();
@@ -13,9 +14,9 @@ const AddMeal: React.FC = () => {
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar className='ion-text-center'>
+				<IonToolbarWrapper className='ion-text-center'>
 					<IonTitle>Meals</IonTitle>
-				</IonToolbar>
+				</IonToolbarWrapper>
 			</IonHeader>
 
 			<IonContent className='ion-padding'>
@@ -60,7 +61,7 @@ function MealCard({ meal }: { meal: Meal }) {
 	}
 
 	return (
-		<IonItem lines='none' className='ion-margin-vertical' style={{ borderRadius: "8px" }} onClick={() => handleClick(meal.id)} routerLink='/meals/new'>
+		<IonItem lines='none' className='ion-margin-vertical' style={{ borderRadius: "8px", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.17)" }} onClick={() => handleClick(meal.id)} routerLink='/meals/new'>
 			<IonThumbnail slot='end' style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
 				<AcuteScoreProgressbar meal={meal} style={{ width: "100%", height: "100%", margin: "0 auto" }} />
 			</IonThumbnail>

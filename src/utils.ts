@@ -1,5 +1,6 @@
 import { ActivityLevel, Gender } from "./stores/settingsStore";
 import { Meal } from "./types/Meal";
+import { MealItem } from "./types/MealItem";
 
 export const calculateChronicScore = (meals: Meal[]): number => {
 	const tdee = 2000; // Total Daily Energy Expenditure, can be dynamic based on user settings
@@ -18,6 +19,12 @@ export const calculateChronicScore = (meals: Meal[]): number => {
 	return Math.round(sum / count);
 };
 
+export const calculateAcuteScore = (meal: Meal): number => {
+	const totalKcal = calculateTotalCalories(meal);
+	if (totalKcal === 0) return 0;
+	const weighted = meal.items.reduce((sum, item) => sum + item.fii * (item.amount * item.kcalPerServing), 0);
+	return Math.round(weighted / totalKcal);
+};
 export const calculateBmr = (weight: number, height: number, age: number, gender: Gender): number => {
 	let bmr: number;
 	if (gender === "female") {
@@ -48,15 +55,30 @@ export const calculateTdee = (weight: number, height: number, age: number, activ
 };
 
 export const calculateTotalCalories = (meal: Meal): number => {
-	return meal.items.reduce((total, item) => total + item.kcalPerServing * item.amount, 0);
+	const total = meal.items.reduce((total, item) => total + item.kcalPerServing * item.amount, 0);
+	return Math.round(total * 100) / 100;
+};
+
+export const calculateTotalItemCalories = (mealItem: MealItem): number => {
+	return Math.round(mealItem.kcalPerServing * mealItem.amount * 100) / 100;
 };
 
 export const calculateTotalCarbohydrates = (meal: Meal): number => {
-	return meal.items.reduce((total, item) => total + item.carbPerServing_g * item.amount, 0);
+	const total = meal.items.reduce((total, item) => total + item.carbPerServing_g * item.amount, 0);
+	return Math.round(total * 100) / 100;
+};
+
+export const calculateTotalItemCarbohydrates = (mealItem: MealItem): number => {
+	return Math.round(mealItem.carbPerServing_g * mealItem.amount * 100) / 100;
 };
 
 export const calculateTotalSaturatedFat = (meal: Meal): number => {
-	return meal.items.reduce((total, item) => total + item.satFatPerServing_g * item.amount, 0);
+	const total = meal.items.reduce((total, item) => total + item.satFatPerServing_g * item.amount, 0);
+	return Math.round(total * 100) / 100;
+};
+
+export const calculateTotalItemSaturatedFat = (mealItem: MealItem): number => {
+	return Math.round(mealItem.satFatPerServing_g * mealItem.amount * 100) / 100;
 };
 
 export const getMealTimeString = (meal: Meal): string => {

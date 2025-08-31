@@ -2,16 +2,17 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonItem,
 import React from "react";
 import { ActivityLevel, Gender, useSettingsStore } from "../../stores/settingsStore";
 import { calculateBmr, calculateTdee } from "../../utils";
+import IonToolbarWrapper from "../../components/IonToolbarWrapper";
 
 const Settings: React.FC = () => {
-	const { darkMode, toggleDarkMode, setGender, gender, age, setAge, weight, setWeight, height, setHeight, activityLevel, setActivityLevel } = useSettingsStore();
+	const { setGender, gender, age, setAge, weight, setWeight, height, setHeight, activityLevel, setActivityLevel } = useSettingsStore();
 
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar className='ion-text-center'>
+				<IonToolbarWrapper className='ion-text-center'>
 					<IonTitle>Settings</IonTitle>
-				</IonToolbar>
+				</IonToolbarWrapper>
 			</IonHeader>
 
 			<IonContent className='ion-padding'>

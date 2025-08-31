@@ -1,5 +1,5 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonText, IonLabel, IonItem, IonThumbnail, IonImg, IonIcon, IonItemDivider } from "@ionic/react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { usePersistentMealStore } from "../../stores/persistentMealStore";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
@@ -9,6 +9,7 @@ import AcuteScoreProgressbar from "../../components/AcuteScoreProgressbar";
 import { Meal } from "../../types/Meal";
 import { batteryCharging, chevronForward, chevronForwardCircle, flame, information, informationCircle, pizza } from "ionicons/icons";
 import { NutrimentComponent } from "../../components/NutrimentComponent";
+import IonToolbarWrapper from "../../components/IonToolbarWrapper";
 
 const Dashboard: React.FC = () => {
 	const meals = usePersistentMealStore((s) => s.meals);
@@ -17,9 +18,9 @@ const Dashboard: React.FC = () => {
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar className='ion-text-center'>
+				<IonToolbarWrapper>
 					<IonTitle>Dashboard</IonTitle>
-				</IonToolbar>
+				</IonToolbarWrapper>
 			</IonHeader>
 
 			<IonContent className='ion-padding'>
@@ -49,12 +50,11 @@ const Dashboard: React.FC = () => {
 					</IonText>
 				) : (
 					<>
-						{/* Featured Recent Meal */}
 						<IonCard
 							style={{
 								borderRadius: "16px",
 								margin: "0px",
-								boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+								boxShadow: "0 4px 12px rgba(0, 0, 0, 0.21)",
 							}}>
 							<IonCardHeader>
 								<IonCardTitle style={{ fontSize: "1.4rem", fontWeight: 700, textAlign: "center" }}>Chronic Score</IonCardTitle>
@@ -113,7 +113,7 @@ function MealCard({ meal }: { meal: Meal }) {
 	};
 
 	return (
-		<IonItem lines='none' onClick={() => handleMealClick(meal.id)} routerLink='/meals/new' key={meal.id} style={{ borderRadius: "16px", marginTop: "0.5rem" }}>
+		<IonItem lines='none' onClick={() => handleMealClick(meal.id)} routerLink='/meals/new' key={meal.id} style={{ borderRadius: "16px", marginTop: "0.5rem", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.17)" }}>
 			<IonThumbnail slot='end' style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
 				<AcuteScoreProgressbar meal={meal} style={{ width: "100%", height: "100%", margin: "0 auto" }} />
 			</IonThumbnail>

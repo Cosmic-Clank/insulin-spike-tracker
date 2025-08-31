@@ -6,7 +6,7 @@ export function NutrimentComponent({ nutrimentName, nutrimentValue, nutrimentIco
 			style={{
 				display: "inline-flex",
 				alignItems: "center",
-				background: "#4d4d4d89",
+				background: "#e5e5e5ff",
 				borderRadius: "16px",
 				padding: "6px 10px",
 				marginRight: "4px",
@@ -16,8 +16,8 @@ export function NutrimentComponent({ nutrimentName, nutrimentValue, nutrimentIco
 				gap: "6px",
 			}}>
 			<IonIcon icon={nutrimentIcon} style={{ fontSize: "12px", color: nutrimentIconColor }} />
-			<span style={{ fontSize: "11px", fontWeight: 500, color: "#ffffff7e" }}>{nutrimentName}:</span>
-			<span style={{ fontSize: "11px", fontWeight: 600, color: "#ffffff96" }}>{nutrimentValue}</span>
+			<span style={{ fontSize: "11px", fontWeight: 500, color: "#555" }}>{nutrimentName}:</span>
+			<span style={{ fontSize: "11px", fontWeight: 600, color: "#222" }}>{nutrimentValue}</span>
 		</div>
 	);
 }

@@ -24,6 +24,7 @@
     "@ionic/react-router": "^8.5.0",
     "@types/react-router": "^5.1.20",
     "@types/react-router-dom": "^5.3.3",
+    "capacitor-plugin-safe-area": "^4.0.0",
     "ionicons": "^7.4.0",
     "lottie-react": "^2.4.1",
     "react": "19.0.0",

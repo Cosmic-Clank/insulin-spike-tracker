@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { defineCustomElements } from "@ionic/pwa-elements/loader";
-import { StatusBar } from "@capacitor/status-bar";
+import { SafeArea } from "capacitor-plugin-safe-area";
 
 const container = document.getElementById("root");
 const root = createRoot(container!);
@@ -11,11 +11,9 @@ const root = createRoot(container!);
 defineCustomElements(window);
 
 (async () => {
-	// Option 1: make the webview stop under the status bar (no overlap)
-	await StatusBar.setOverlaysWebView({ overlay: false });
-
-	// Optional: set a background color for Android status bar
-	// await StatusBar.setBackgroundColor({ color: "#3880ff" });
+	const { insets } = await SafeArea.getSafeAreaInsets();
+	document.body.classList.add("inset-padding-top");
+	document.body.style.setProperty("paddingTop", `${50}px`);
 })();
 
 root.render(

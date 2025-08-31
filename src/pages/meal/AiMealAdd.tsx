@@ -5,6 +5,7 @@ import { useIonRouter } from "@ionic/react";
 import { arrowForward, camera, trash } from "ionicons/icons";
 import { fetchAiMealFromAPI } from "../../api/api";
 import { useCurrentMealStore } from "../../stores/currentMealStore";
+import IonToolbarWrapper from "../../components/IonToolbarWrapper";
 
 const AiMealAdd = () => {
 	const [error, setError] = useState("");
@@ -67,12 +68,12 @@ const AiMealAdd = () => {
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar>
+				<IonToolbarWrapper className='ion-text-left'>
 					<IonButtons slot='start'>
 						<IonBackButton />
 					</IonButtons>
 					<IonTitle>Smart Camera</IonTitle>
-				</IonToolbar>
+				</IonToolbarWrapper>
 			</IonHeader>
 
 			<IonContent className='ion-padding ion-text-center'>

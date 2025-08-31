@@ -8,8 +8,9 @@ import { useCurrentMealStore } from "../../stores/currentMealStore";
 import LoadingPreview from "./LoadingPreviewComponent";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { fetchBarcodeMealItemFromAPI } from "../../api/api";
-import { calculateTotalCalories, getMealTimeString } from "../../utils";
+import { calculateTotalCalories, calculateTotalItemCalories, calculateTotalItemCarbohydrates, calculateTotalItemSaturatedFat, getMealTimeString } from "../../utils";
 import { NutrimentComponent } from "../../components/NutrimentComponent";
+import IonToolbarWrapper from "../../components/IonToolbarWrapper";
 
 const PreviewMeal = () => {
 	const { meal, setMeal, deleteMealItem, addEmptyMealItem, setImage, setName, resetMeal, addMealItem } = useCurrentMealStore();
@@ -34,10 +35,11 @@ const PreviewMeal = () => {
 	const handleLogMeal = () => {
 		if (!meal) return;
 		addMeal(meal); // ✅ Adds full meal to Zustand
+		setToastMessage("Meal saved successfully");
 		setShowToast(true);
 		setTimeout(() => {
 			router.goBack(); // or wherever you want
-		}, 800);
+		}, 1000);
 	};
 
 	const handleTakePicture = async () => {
@@ -102,13 +104,13 @@ const PreviewMeal = () => {
 	return (
 		<IonPage>
 			<IonHeader>
-				<IonToolbar>
+				<IonToolbarWrapper className='ion-text-left'>
 					<IonButtons slot='start'>
 						<IonBackButton defaultHref='/meals' />
 					</IonButtons>
 
 					<IonTitle>Review Meal</IonTitle>
-				</IonToolbar>
+				</IonToolbarWrapper>
 			</IonHeader>
 
 			<IonContent className=''>
@@ -135,7 +137,7 @@ const PreviewMeal = () => {
 					<LoadingPreview />
 				) : (
 					<>
-						<IonCard style={{ borderRadius: "16px" }}>
+						<IonCard style={{ borderRadius: "16px", boxShadow: "0 2px 10px rgba(0, 0, 0, 0.24)" }}>
 							<IonCardHeader>
 								<IonCardTitle>
 									<IonInput
@@ -143,7 +145,6 @@ const PreviewMeal = () => {
 										placeholder='Enter item name'
 										onIonInput={(e) => setMeal({ ...meal, name: e.detail.value! })}
 										style={{
-											color: "white",
 											fontSize: "20px",
 										}}>
 										<IonIcon slot='end' icon={create} aria-hidden='true'></IonIcon>
@@ -166,14 +167,14 @@ const PreviewMeal = () => {
 
 						<IonModal isOpen={!!modalItem} onDidDismiss={() => setModalItem(null)} className=''>
 							<IonHeader>
-								<IonToolbar>
+								<IonToolbarWrapper className='ion-text-left'>
 									<IonTitle>Edit: {modalItem?.name}</IonTitle>
 									<IonButtons slot='start'>
 										<IonButton slot='icon-only' size='large' onClick={() => setModalItem(null)}>
 											<IonIcon slot='icon-only' icon={arrowBack} />
 										</IonButton>
 									</IonButtons>
-								</IonToolbar>
+								</IonToolbarWrapper>
 							</IonHeader>
 							<IonContent className='ion-padding'>
 								{modalItem && (
@@ -184,7 +185,6 @@ const PreviewMeal = () => {
 												placeholder='Enter item name'
 												onIonInput={(e) => updateItem(modalItem.id, "name", e.detail.value!)}
 												style={{
-													color: "white",
 													fontSize: "20px",
 												}}>
 												<IonIcon slot='end' icon={create} aria-hidden='true'></IonIcon>
@@ -211,9 +211,9 @@ const PreviewMeal = () => {
 											<IonInput fill='outline' labelPlacement='start' type='number' style={{ textAlign: "right" }} label='FII' value={modalItem.fii} placeholder='Enter FII' onIonInput={(e) => updateItem(modalItem.id, "fii", e.detail.value!)} />
 											<IonInput className='ion-margin-vertical' labelPlacement='start' style={{ textAlign: "right" }} type='number' fill='outline' label='Glycemic Index' value={modalItem.gi} placeholder={`Enter glycemic index`} onIonInput={(e) => updateItem(modalItem.id, "gi", e.detail.value!)} />
 											<div className='' style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "12px" }}>
-												<NutrimentComponent nutrimentName='Total Calories' nutrimentValue={`${modalItem.kcalPerServing && modalItem.amount ? (Number(modalItem.kcalPerServing) * Number(modalItem.amount)).toFixed(2) : 0} kcal`} nutrimentIcon={flame} nutrimentIconColor='#ff5151ff' />
-												<NutrimentComponent nutrimentName='Total Carbs' nutrimentValue={`${modalItem.carbPerServing_g && modalItem.amount ? (Number(modalItem.carbPerServing_g) * Number(modalItem.amount)).toFixed(2) : 0} g`} nutrimentIcon={pizza} nutrimentIconColor='#ffcc00ff' />
-												<NutrimentComponent nutrimentName='Total Saturated Fat' nutrimentValue={`${modalItem.satFatPerServing_g && modalItem.amount ? (Number(modalItem.satFatPerServing_g) * Number(modalItem.amount)).toFixed(2) : 0} g`} nutrimentIcon={batteryCharging} nutrimentIconColor='#0091ffff' />
+												<NutrimentComponent nutrimentName='Total Calories' nutrimentValue={`${calculateTotalItemCalories(modalItem)} kcal`} nutrimentIcon={flame} nutrimentIconColor='#ff5151ff' />
+												<NutrimentComponent nutrimentName='Total Carbs' nutrimentValue={`${calculateTotalItemCarbohydrates(modalItem)} g`} nutrimentIcon={pizza} nutrimentIconColor='#ffcc00ff' />
+												<NutrimentComponent nutrimentName='Total Saturated Fat' nutrimentValue={`${calculateTotalItemSaturatedFat(modalItem)} g`} nutrimentIcon={batteryCharging} nutrimentIconColor='#0091ffff' />
 												{modalItem.source ? <IonText>Source: {modalItem.source}</IonText> : null}
 
 												<IonButton onClick={() => setModalItem(null)}>
@@ -245,7 +245,7 @@ const PreviewMeal = () => {
 								<IonText color='medium'>Start by adding a meal item by clicking the "+" button</IonText>
 							</IonItem>
 						) : (
-							<IonList inset={true} style={{ borderRadius: "16px" }}>
+							<IonList inset={true} style={{ borderRadius: "16px", boxShadow: "0 2px 10px rgba(0, 0, 0, 0.24)" }}>
 								{meal.items.map((item) => (
 									<IonItem button key={item.id} onClick={() => setModalItem(item)}>
 										{item.image ? (
@@ -256,9 +256,9 @@ const PreviewMeal = () => {
 										<IonLabel>
 											<h2 style={{ marginBottom: "0.5rem" }}>{item.name}</h2>
 											<IonNote color='medium' className='ion-text-wrap'>
-												<NutrimentComponent nutrimentName='Calories' nutrimentValue={item.kcalPerServing * item.amount} nutrimentIcon={flame} nutrimentIconColor='#ff5151ff' />
-												<NutrimentComponent nutrimentName='Carbohydrates' nutrimentValue={item.carbPerServing_g * item.amount} nutrimentIcon={pizza} nutrimentIconColor='#ffcc00ff' />
-												<NutrimentComponent nutrimentName='Saturated Fats' nutrimentValue={item.satFatPerServing_g * item.amount} nutrimentIcon={batteryCharging} nutrimentIconColor='#0091ffff' />
+												<NutrimentComponent nutrimentName='Calories' nutrimentValue={calculateTotalItemCalories(item)} nutrimentIcon={flame} nutrimentIconColor='#ff5151ff' />
+												<NutrimentComponent nutrimentName='Carbohydrates' nutrimentValue={calculateTotalItemCarbohydrates(item)} nutrimentIcon={pizza} nutrimentIconColor='#ffcc00ff' />
+												<NutrimentComponent nutrimentName='Saturated Fats' nutrimentValue={calculateTotalItemSaturatedFat(item)} nutrimentIcon={batteryCharging} nutrimentIconColor='#0091ffff' />
 												<NutrimentComponent nutrimentName='FII' nutrimentValue={item.fii * item.amount} nutrimentIcon={information} nutrimentIconColor='green' />
 												<NutrimentComponent nutrimentName='GI' nutrimentValue={item.gi * item.amount} nutrimentIcon={information} nutrimentIconColor='green' />
 											</IonNote>
@@ -338,27 +338,11 @@ const PreviewMeal = () => {
 									}}>
 									<IonIcon icon={trash}></IonIcon>
 								</IonFabButton>
-								<IonFabButton color='success' id='log-meal-alert'>
+								<IonFabButton color='success' onClick={handleLogMeal}>
 									<IonIcon icon={save}></IonIcon>
 								</IonFabButton>
 							</IonFabList>
 						</IonFab>
-
-						<IonAlert
-							header='Warning'
-							message='Please make sure the fields are sensible. If you used AI, you might want to double-check the values.'
-							trigger='log-meal-alert'
-							buttons={[
-								{
-									text: "Back",
-									role: "cancel",
-								},
-								{
-									text: "Continue",
-									role: "confirm",
-									handler: handleLogMeal,
-								},
-							]}></IonAlert>
 
 						<IonToast isOpen={showToast} message={toastMessage} duration={2200} color='success' onDidDismiss={() => setShowToast(false)} />
 					</>
